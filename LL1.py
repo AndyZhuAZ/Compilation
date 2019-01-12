@@ -137,7 +137,7 @@ class LL1:
         for i in self.VN:
             for representation in self.representation:
                 left_representation, right_representation = representation.split('->')
-                
+
                 if i in right_representation:
                     next = ''
                     # 第一种情况，后面没有
@@ -217,7 +217,7 @@ class LL1:
         stack = []
         stack.append('$')
         # 开始符号
-        stack.append(self.VN[0])
+        stack.append(self.first_state)
 
         c = stack.pop() # 访问栈
         i = 0           # 访问str
@@ -235,6 +235,8 @@ class LL1:
                     left_representation, right_representation = representation.split('->')
 
                     if right_representation == 'ε':
+                        c = stack.pop()
+
                         continue
 
                     stack+=[i for i in right_representation[::-1]]
@@ -249,12 +251,12 @@ class LL1:
             else:
                 print(stack)
 
-                i=i+1
-                c = stack.pop()
+
 
                 table.add_row([stack.__str__(), input_str[i:], '匹配'+input_str[i]])
 
-
+                i = i + 1
+                c = stack.pop()
                 # table.add_row(['123456789987654321', '123456789987654321', '123456789987654321'])
 
                 # exit()
