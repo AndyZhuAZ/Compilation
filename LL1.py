@@ -77,6 +77,7 @@ class LL1:
     def indirect2direct(self):
         self.get_VT_VN()
         message = []
+        remove_list = []
         for i in self.representation:
             left, right = i.split(' -> ')
             for j in right.split(' '):
@@ -90,6 +91,7 @@ class LL1:
                 if str(left + ' at right of ' +i) in message:
                     flag = 0
                     for j in right_list:
+                        j = j.split(' ')
                         if j[0] in self.VN:
                             if j[0] is not left:
                                 for k in self.representation:
@@ -99,11 +101,15 @@ class LL1:
                                         a = []
                                         a += [str(r) for r in kright_list]
                                         for c in a :
-                                            a[a.index(c)] = a[a.index(c)] + right_list[right_list.index(j)][1:]
-                                        #TODO: 把right_list: ['A c', 'S d', 'ε']中的'S d'变成a: ['A a d', 'b d']中的若干元素
-                                        #TODO:在此输入
-
-                                        #TODO:删除S -> A a | b，把right_list输出回self.representation
+                                            a[a.index(c)] = a[a.index(c)] + right_list[right_list.index(' '.join(tmp for tmp in j))][1:]
+                                        right_list.remove(' '.join(tmp for tmp in j))
+                                        right_list.extend(a)
+                                        remove_list.append(k)
+                    self.representation += [left + ' -> ' + ' | '.join(right for right in right_list)]
+                    remove_list.append(i)
+                    pass
+        for i in remove_list:
+            self.representation.remove(i)
         print('间接左递归变直接左递归', self.representation)
 
     def de_direct_recursion(self):
