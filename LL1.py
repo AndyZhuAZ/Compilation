@@ -133,7 +133,11 @@ class LL1:
                     if j in folow_left:
                         flag = 1
                         right_list[right_list.index(j)] = j + str(" " + left + "'")
-                new_right.append('ε')
+                    if j[0] is not left:
+                        flag = 1
+                        right_list[right_list.index(j)] = j + str(" " + left + "'")
+                if flag is 1:
+                    new_right.append('ε')
                 for re in remove_list_:
                     right_list.remove(re)
                 remove_list.append(i)
