@@ -73,7 +73,7 @@ class LL1:
     #
     #     print('消除左递归', self.representation)
 
-    # TODO:间接左递归变直接左递归
+    # 间接左递归变直接左递归
     def indirect2direct(self):
         self.get_VT_VN()
         message = []
