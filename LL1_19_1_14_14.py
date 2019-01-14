@@ -1,6 +1,7 @@
 # coding:utf8
 
 import pandas as pd
+pd.set_option('display.max_columns', 100)
 from prettytable import PrettyTable
 
 class LL1:
@@ -13,6 +14,7 @@ class LL1:
 
         self.first = dict()
         self.follow = dict()
+        self.select = dict()
         self.table = dict()
 
 
@@ -22,11 +24,11 @@ class LL1:
         根据读取文件第一行，左部表达式，来确定初始状态
         :return:
         """
-        fo = open("./产生式4.txt", "r")
-        input = fo.read()
-        self.representation = input.split('\n')
+        # fo = open("./产生式4.txt", "r")
+        # input = fo.read()
+        # self.representation = input.split('\n')
         # self.representation = ['S -> A a | b','A -> A c | S d | ε']
-        # self.representation=['E -> E + T | T','T -> T * F | F','F -> ( E ) | id']
+        self.representation=['E -> E + T | T','T -> T * F | F','F -> ( E ) | id']
         # self.representation=['P -> A a | i','A -> P b']
         print('产生式：', self.representation)
 
@@ -237,15 +239,6 @@ class LL1:
             elif right_representation_list[0] in self.VN:
                 self.first[left_representation]|=self.get_first_VN(right_representation_list[0])
 
-    def first(self, v):
-        """
-
-        :param v: 任意符号，终结/非终结符
-        :return:
-        """
-
-
-
         print('FIRST')
         for i in self.first.keys():
             print(i, self.first[i])
@@ -337,6 +330,46 @@ class LL1:
         获取select集
         :return:
         """
+        for representation in self.representation:
+            left = representation.split(' -> ')[0]
+            right_1st = representation.split(' -> ')[1].split(' ')[0]
+            if right_1st in self.VN: # 非终结符
+                self.select[representation] = self.first[left]
+            elif right_1st in self.VT: # 终结符
+                self.select[representation] = set()
+                self.select[representation].add(right_1st)
+
+            elif right_1st == 'ε':
+                self.select[representation] = self.follow[left]
+                pass
+        # print(self.select)
+        print('select')
+        for i in self.select.keys():
+            print(i, self.select[i])
+
+    def is_ll1(self):
+        have_ll1m = False
+        _is_ll1 = False
+        VN_selcet = dict()
+
+        for i in self.select.keys():
+            if i.split(' -> ')[0] not in VN_selcet.keys():
+                VN_selcet[i.split(' -> ')[0]] = []
+            VN_selcet[i.split(' -> ')[0]] += list(self.select[i])
+
+        for i in VN_selcet.keys():
+            if len(VN_selcet[i]) != len(set(VN_selcet[i])):
+                pass
+            else:
+                have_ll1m = True
+
+        if have_ll1m:
+            print('可以构造LL1分析器')
+        else:
+            print('不能构造LL1分析器')
+            exit()
+
+
 
 
 
@@ -368,7 +401,6 @@ class LL1:
                     self.table[left_representation][i] = representation
 
         # synch
-        print('\n\n\n')
         for i in self.VN:
             for j in self.follow[i]:
                 if j not in self.table[i]:
@@ -388,8 +420,9 @@ class LL1:
         对用户输入语句进行语法分析
         :return:
         """
-        input_str = input("请输入：")
-        input_str+=' $'
+        # input_str = input("请输入：")
+        input_str = 'id + id )'
+        input_str += ' $'
 
         input_str = input_str.split(' ')
 
@@ -397,19 +430,29 @@ class LL1:
         # 开始符号
         stack.append(self.first_state)
 
-        c = stack.pop() # 访问栈
-        i = 0           # 访问str
-
         table = PrettyTable(["栈", "输入", "动作"])
         table.padding_width = 1
         table.align = "l"
 
+        i = 0  # 访问str
+
         table.add_row([stack.__str__(), input_str[i:], ''])
+
+        c = stack.pop()  # 访问栈
 
         while c!='$':
             if c in self.VN:    # 非终结符
                 if input_str[i] in self.table[c].keys():  # 如果有这个表达式，查表
                     representation = self.table[c][input_str[i]]
+
+                    # # 测试
+                    # if input_str[i] == c:  # 栈顶是否匹配输入
+                    #     table                        .add_row([stack.__str__(), input_str[i + 1:], '匹配' + input_str[i]])
+                    #     i = i + 1
+                    #     c = stack.pop()
+                    # else:  # 不匹配，栈顶弹出
+                    #     table.add_row([stack.__str__(), input_str[i:], 'error:' + str(i) + input_str[i]])  # 先报错，再弹栈顶
+
 
                     # 查表，弹栈顶
                     if representation == 'synch':
@@ -422,7 +465,9 @@ class LL1:
 
                     # 如果指向空，则替换为空，直接弹下一个
                     if right_representation == 'ε':
+                        table.add_row([stack.__str__(), input_str[i:], representation])
                         c = stack.pop()
+
                         continue
 
                     # 正常情况反向进栈
@@ -438,11 +483,28 @@ class LL1:
 
             elif c in self.VT:  # 终结符
                 if input_str[i] == c:   # 栈顶是否匹配输入
-                    table.add_row([stack.__str__(), input_str[i:], '匹配' + input_str[i]])
+                    table.add_row([stack.__str__(), input_str[i+1:], '匹配' + input_str[i]])
+
                     i = i + 1
                     c = stack.pop()
+
+
                 else:   # 不匹配，栈顶弹出
+                    table.add_row([stack.__str__(), input_str[i:], 'error:' + str(i) + input_str[i]])  # 先报错，再弹栈顶
+
                     c = stack.pop()
+
+        if input_str[i:][0] != '$':
+            stack.append(c)
+
+            while len(input_str[i:])!=0:
+                if input_str[i:][0] != '$':
+                    table.add_row([stack.__str__(), input_str[i:], 'error:输入栈未排空 ' + str(i) + input_str[i]])
+                    i += 1
+                else:
+                    table.add_row([stack.__str__(), input_str[i:], '结束'])
+                    i+=1
+
 
 
         print(table)
@@ -466,6 +528,10 @@ if __name__ == '__main__':
     ll1.get_first()
 
     ll1.get_follow()
+
+    ll1.get_select()
+
+    ll1.is_ll1()
 
     ll1.get_tabel()
 
