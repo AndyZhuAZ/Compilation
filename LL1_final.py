@@ -447,7 +447,13 @@ class LL1:
 
                     # 查表，弹栈顶
                     if representation == 'synch':
-                        table.add_row([stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i]+'，缺少：'+str(self.first[c])])  # 先报错，再弹栈顶
+                        # 删除ε
+                        error_list = []
+                        for f in self.first[c]:
+                            if f != 'ε':
+                                error_list.append(f)
+                        table.add_row([stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i]+'，缺少：' + str(error_list)])  # 先报错，再弹栈顶
+
                         c = stack.pop()
                         continue
 
@@ -467,7 +473,13 @@ class LL1:
 
                 # 查表为空, 报错，忽略输入
                 else:
-                    table.add_row([stack.__str__(), input_str[i:],'error，位置：' + str(i) + '，字符：' + input_str[i] + '，缺少：' + str(self.first[c])])
+                    # 删除ε
+                    error_list = []
+                    for f in self.first[c]:
+                        if f != 'ε':
+                            error_list.append(f)
+                    table.add_row([stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i] + '，缺少：' + str(error_list)])
+
                     i = i + 1
 
             elif c in self.VT:  # 终结符
