@@ -24,7 +24,10 @@ class LL1:
         """
         fo = open("./产生式5.txt", "r")
         input = fo.read()
-        self.representation = input.split('\n')
+        # self.representation = input.split('\n')
+        # self.representation = ['S -> A a | b','A -> A c | S d | ε']
+        # self.representation=['E -> E + T | T','T -> T * F | F','F -> ( E ) | id']
+        self.representation=['P -> A a | i','A -> P b']
 
         print('产生式：', self.representation)
 
@@ -52,27 +55,113 @@ class LL1:
 
 
 
-    # def delleft(self):
-    #     """
-    #     消除左递归与|
-    #     :return:
-    #     """
-    #     remove_list = []
-    #     for i in self.representation:
-    #         # print(i)
-    #         if '|' in i:
-    #             # print(i)
-    #             left, right = i.split(' -> ')
-    #             right_list = right.split(' | ')
-    #             remove_list.append(i)
-    #             # self.representation.remove(i) # 影响指针，修改循环外删除
-    #             self.representation+=[left+' -> '+str(right) for right in right_list]
-    #
-    #     for i in remove_list:
-    #         self.representation.remove(i)
-    #
-    #     print('消除左递归', self.representation)
+    #直接间接左递归选择入口
+    def is_recursion(self):
+        is_indirect = False
+        is_direct = False
+        left_set = set()
 
+        # 获取表达式左部集
+        for representation in self.representation:
+            left_representation, right_representation = representation.split(' -> ')
+            left_set.add(left_representation)
+
+        for representation in self.representation:
+            left_representation, right_representation = representation.split(' -> ')
+            right_representation_list = right_representation.split(' | ')
+
+            flag = 0
+
+            for right in right_representation_list:
+                right = right.split(' ')
+
+                if left_representation == right[0]:
+                    is_direct = True
+                # 间接左递归
+                for isIndirect_representation in self.representation:
+                    if isIndirect_representation == representation:
+                        continue
+                    isIndirect_left_representation, isIndirect_right_representation = isIndirect_representation.split(' -> ')
+                    # 判断是否又递归关系
+                    if isIndirect_left_representation != right[0]:
+                        continue
+                    # 划分具体
+                    isIndirect_right_representation_list = isIndirect_right_representation.split(' | ')
+                    for isIndirect_right in isIndirect_right_representation_list:
+                        isIndirect_right_list =  isIndirect_right.split(' ')
+                        if left_representation == isIndirect_right_list[0]:
+                            pass
+                            is_indirect = True
+
+                            print('间接', representation, isIndirect_representation)
+
+
+        if is_indirect:
+            pass
+            print('indirect')
+            self.indirect2direct()
+            self.de_direct_recursion()
+        elif is_direct:
+            pass
+            print('direct')
+            self.de_direct_recursion()
+        else:
+            print('none')
+
+            #     elif flag == 0:
+            #         pass
+            #
+            #
+            # for right in right_representation_list:
+            #     r = right.split(' ')
+            #     for isIndirect_representation in self.representation:
+            #         isIndirect_left_representation, isIndirect_right_representation = isIndirect_representation.split(' -> ')
+            #         if isIndirect_left_representation == r[0]:
+            #             is_indirect = True
+            #             break
+            #     if is_indirect:
+            #         break
+            #
+            #
+            #
+            #
+            #
+            #
+            #
+            #
+            #
+            #
+            # right_representation_list_ = []
+            # for i in right_representation_list:
+            #     right_representation_list_ += i.split(' ')
+            #
+            # # 间接
+            # for isIndirect_representation in self.representation:
+            #     isIndirect_left_representation, isIndirect_right_representation = isIndirect_representation.split(
+            #         ' -> ')
+            #     # 划分具体
+            #     isIndirect_representation_list = isIndirect_right_representation.split(' | ')
+            #     # isIndirect_representation_list_ = isIndirect_representation_list.split(' ')
+            #     isIndirect_representation_list_ = []
+            #     for i in isIndirect_representation_list:
+            #         isIndirect_representation_list_ += i.split(' ')
+            #
+            #     if isIndirect_left_representation in isIndirect_representation_list_:
+            #         # print('间接', representation, ',   ', isIndirect_representation)
+            #         is_indirect = True
+            #         continue  # 注意这个continue，多种情况
+            # # 如果是间接，不判断直接
+            # if is_indirect:
+            #     self.indirect2direct()
+            #     self.de_direct_recursion()
+            #     break
+            #
+            # if left_representation in right_representation_list_:
+            #     # print('直接', representation)
+            #     self.de_direct_recursion()
+            #     break
+
+        # print('无递归')
     # 间接左递归变直接左递归
     def indirect2direct(self):
         self.get_VT_VN()
@@ -118,7 +207,9 @@ class LL1:
         for i in self.representation:
 
             if '|' in i:
-                flag = 0
+                ldirect_flag = False
+                flag = False
+                epsilion_flag = False
                 left, right = i.split(' -> ')
                 right_list = right.split(' | ')
 
@@ -129,18 +220,26 @@ class LL1:
                 for j in right_list:
                     temp = j.split(' ')
                     if temp[0] is left:
+                        ldirect_flag = True
                         remove_list_.append(j)    # 当前元素加入删除列表
                         follow_left.extend(temp[1:])    # left的follow
                         new_right.append(' '.join(temp[1:]) + " " + left + "'") # 新的右部
-                    elif temp[0] is 'ε':  # 第一个为空，表示为空
-                        new_right.append(left + "'")  # 新的右部
+                    elif temp[0] == 'ε':  # 第一个为空，表示为空
+                        new_right.append('ε')  # 新的右部
+                        epsilion_flag = True
+                        remove_list_.append(j)
+                    # elif temp[0] == '(':
+                    #     pass
+                    elif not ldirect_flag:
+                        pass
                     elif temp[0] is not left:
-                        flag = 1
+                        flag = True
                         right_list[right_list.index(j)] = j + str(" " + left + "'") # 所有开头非左部表达四，都变成以他开头加左部'
 
-
-
-
+                if epsilion_flag:
+                    right_list.append(left + "'")  # 新的右部
+                if flag:
+                    new_right.append('ε')
                     # if j in follow_left:
                     #     flag = 1
                     #     right_list[right_list.index(j)] = j + str(" " + left + "'")
@@ -155,7 +254,7 @@ class LL1:
                 remove_list.append(i)
                 # self.representation.remove(i) # 影响指针，修改循环外删除
                 self.representation += [left + ' -> ' + str(right) for right in right_list]
-                if flag is 1:
+                if flag:
                     self.representation += [left + "'" + ' -> ' + str(right) for right in new_right]
             # else:
             #     left, right = i.split(' -> ')
@@ -468,9 +567,10 @@ if __name__ == '__main__':
     pass
     ll1 = LL1()
     ll1.get_representation()
-    ll1.indirect2direct()
-    ll1.de_direct_recursion()
-
+    ll1.is_recursion()
+    # ll1.indirect2direct()
+    # ll1.de_direct_recursion()
+    exit()
 
     ll1.out_VT_VN()
 
