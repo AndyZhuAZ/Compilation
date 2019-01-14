@@ -121,25 +121,37 @@ class LL1:
                 flag = 0
                 left, right = i.split(' -> ')
                 right_list = right.split(' | ')
+
                 remove_list_ = []
-                folow_left = []  # 在右部中出现在左部之后的表达式
+                follow_left = []  # 在右部中出现在左部之后的表达式
                 new_right = []
+
                 for j in right_list:
                     temp = j.split(' ')
                     if temp[0] is left:
-                        remove_list_.append(right_list[right_list.index(j)])
-                        folow_left.extend(temp[1:])
-                        new_right.append(' '.join(temp[1:]) + " " + left + "'")
-                    if j in folow_left:
+                        remove_list_.append(j)    # 当前元素加入删除列表
+                        follow_left.extend(temp[1:])    # left的follow
+                        new_right.append(' '.join(temp[1:]) + " " + left + "'") # 新的右部
+                    elif temp[0] is 'ε':  # 第一个为空，表示为空
+                        new_right.append(left + "'")  # 新的右部
+                    elif temp[0] is not left:
                         flag = 1
-                        right_list[right_list.index(j)] = j + str(" " + left + "'")
-                    if j[0] is not left:
-                        flag = 1
-                        right_list[right_list.index(j)] = j + str(" " + left + "'")
-                if flag is 1:
-                    new_right.append('ε')
+                        right_list[right_list.index(j)] = j + str(" " + left + "'") # 所有开头非左部表达四，都变成以他开头加左部'
+
+
+
+
+                    # if j in follow_left:
+                    #     flag = 1
+                    #     right_list[right_list.index(j)] = j + str(" " + left + "'")
+                    # if j[0] is not left:
+                    #     flag = 1
+                    #     right_list[right_list.index(j)] = j + str(" " + left + "'")
+                # if flag is 1:
+                #     new_right.append('ε')
                 for re in remove_list_:
                     right_list.remove(re)
+                # right_list.extend(new_right)
                 remove_list.append(i)
                 # self.representation.remove(i) # 影响指针，修改循环外删除
                 self.representation += [left + ' -> ' + str(right) for right in right_list]
@@ -310,16 +322,79 @@ class LL1:
                 for i in first:
                     self.table[left_representation][i] = representation
 
+        # 新加内容
+        print('\n\n\n')
+        for i in self.VN:
+            for j in self.follow[i]:
+                if j not in self.table[i]:
+                    self.table[i][j] = 'synch'
+
         print('TABLE')
         for i in self.table.keys():
             print(i, self.table[i])
-        print('TABLE Dataframe')
-        tmp = pd.DataFrame(ll1.table).T.fillna('')
+        print('df_TABLE')
+        df_table = pd.DataFrame(ll1.table).T.fillna('')
         # tmp.to_csv('./table.csv')
-        print(tmp)
+        print(df_table)
 
 
 
+    #2019年1月13日
+    # def analyze(self):
+    #     """
+    #     对用户输入语句进行语法分析
+    #     :return:
+    #     """
+    #     input_str = input("请输入：")
+    #     input_str+=' $'
+    #
+    #     input_str = input_str.split(' ')
+    #
+    #     stack = ['$']
+    #     # 开始符号
+    #     stack.append(self.first_state)
+    #
+    #     c = stack.pop() # 访问栈
+    #     i = 0           # 访问str
+    #
+    #     table = PrettyTable(["栈", "输入", "动作"])
+    #     table.padding_width = 1
+    #     table.align = "l"
+    #
+    #     table.add_row([stack.__str__(), input_str[i:], ''])
+    #
+    #     while c!='$':
+    #         if input_str[i]!=c:
+    #             if input_str[i] in self.table[c].keys():    # 如果有这个表达式
+    #                 representation = self.table[c][input_str[i]]
+    #                 left_representation, right_representation = representation.split(' -> ')
+    #                 right_representation_list = right_representation.split(' ')
+    #
+    #                 if right_representation == 'ε':
+    #                     c = stack.pop()
+    #
+    #                     continue
+    #
+    #                 stack+=[i for i in right_representation_list[::-1]]
+    #                 print(stack)
+    #
+    #                 table.add_row([stack.__str__(), input_str[i:], representation])
+    #
+    #
+    #
+    #                 c = stack.pop()
+    #
+    #         else:
+    #             print(stack)
+    #
+    #
+    #
+    #             table.add_row([stack.__str__(), input_str[i:], '匹配'+input_str[i]])
+    #
+    #             i = i + 1
+    #             c = stack.pop()
+    #
+    #     print(table)
 
     def analyze(self):
         """
@@ -345,38 +420,45 @@ class LL1:
         table.add_row([stack.__str__(), input_str[i:], ''])
 
         while c!='$':
-            if input_str[i]!=c:
-                if input_str[i] in self.table[c].keys():    # 如果有这个表达式
+            if c in self.VN:    # 非终结符
+                if input_str[i] in self.table[c].keys():  # 如果有这个表达式，查表
                     representation = self.table[c][input_str[i]]
+
+                    # 查表，弹栈顶
+                    if representation == 'synch':
+                        table.add_row([stack.__str__(), input_str[i:], 'error:' + str(i) + input_str[i]])   # 先报错，再弹栈顶
+                        c = stack.pop()
+                        continue
+
                     left_representation, right_representation = representation.split(' -> ')
                     right_representation_list = right_representation.split(' ')
 
+                    # 如果指向空，则替换为空，直接弹下一个
                     if right_representation == 'ε':
                         c = stack.pop()
-
                         continue
 
+                    # 正常情况反向进栈
                     stack+=[i for i in right_representation_list[::-1]]
-                    print(stack)
 
                     table.add_row([stack.__str__(), input_str[i:], representation])
-
-
-
                     c = stack.pop()
 
-            else:
-                print(stack)
+                # 查表为空, 报错，忽略输入
+                else:
+                    table.add_row([stack.__str__(), input_str[i:], 'error:'+str(i)+input_str[i]])
+                    i = i + 1
 
+            elif c in self.VT:  # 终结符
+                if input_str[i] == c:   # 栈顶是否匹配输入
+                    table.add_row([stack.__str__(), input_str[i:], '匹配' + input_str[i]])
+                    i = i + 1
+                    c = stack.pop()
+                else:   # 不匹配，栈顶弹出
+                    c = stack.pop()
 
-
-                table.add_row([stack.__str__(), input_str[i:], '匹配'+input_str[i]])
-
-                i = i + 1
-                c = stack.pop()
 
         print(table)
-
 
 
 
