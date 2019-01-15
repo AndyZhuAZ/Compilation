@@ -3,6 +3,8 @@
 import pandas as pd
 pd.set_option('display.max_columns', 100)
 from prettytable import PrettyTable
+import warnings
+warnings.filterwarnings("ignore")
 
 class LL1:
     def __init__(self):
@@ -24,7 +26,7 @@ class LL1:
         根据读取文件第一个表达式左部，来确定初始状态
         :return:
         """
-        fo = open("./产生式4.txt", "r")
+        fo = open("./产生式1.txt", "r")
         input = fo.read()
         self.representation = input.split('\n')
         # self.representation = ['S -> A a | b', 'A -> A c | S d | ε']
@@ -52,6 +54,11 @@ class LL1:
 
 
     def out_VT_VN(self):
+        self.first = dict()
+        self.follow = dict()
+        self.VN = set()
+        self.VT = set()
+
         self.get_VT_VN()
         print('非终结符：', self.VN)
         print('终结符：', self.VT)
@@ -105,6 +112,9 @@ class LL1:
             self.de_direct_recursion()
         else:
             print('无左递归')
+
+
+
 
 
     def indirect2direct(self):
@@ -438,8 +448,6 @@ class LL1:
 
         c = stack.pop()  # 访问栈
 
-        print()
-
         while c!='$':
             if c in self.VN:    # 非终结符
                 if input_str[i] in self.table[c].keys():  # 如果有这个表达式，查表
@@ -453,7 +461,6 @@ class LL1:
                             if f != 'ε':
                                 error_list.append(f)
                         table.add_row([stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i]+'，缺少：' + str(error_list)])  # 先报错，再弹栈顶
-
                         c = stack.pop()
                         continue
 
@@ -479,7 +486,6 @@ class LL1:
                         if f != 'ε':
                             error_list.append(f)
                     table.add_row([stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i] + '，缺少：' + str(error_list)])
-
                     i = i + 1
 
             elif c in self.VT:  # 终结符
@@ -490,8 +496,6 @@ class LL1:
                 else:   # 不匹配，栈顶弹出
                     table.add_row([stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i] + '，缺少：' + c])
                     c = stack.pop()
-
-
 
         if input_str[i:][0] != '$':
             stack.append(c)
