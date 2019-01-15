@@ -1,5 +1,3 @@
-(,),i,+
-E,R,F
-E->TR
-R->+TR|ε
-F->(E)|i
+E -> E + T | T
+T -> T * F | F
+F -> ( E ) | id
