@@ -1,24 +1,26 @@
 # coding:utf8
 
 import pandas as pd
+
 pd.set_option('display.max_columns', 100)
 from prettytable import PrettyTable
 import warnings
+
 warnings.filterwarnings("ignore")
+
 
 class LL1:
     def __init__(self):
-        self.representation = []    # 表达式
-        self.first_state = ''       # 初始状态
+        self.representation = []  # 表达式
+        self.first_state = ''  # 初始状态
 
-        self.VT = set()             # 终结符
-        self.VN = set()             # 非终结符
+        self.VT = set()  # 终结符
+        self.VN = set()  # 非终结符
 
-        self.first = dict()         # first集
-        self.follow = dict()        # follow集
-        self.select = dict()        # select集
-        self.table = dict()         # 预测分析表
-
+        self.first = dict()  # first集
+        self.follow = dict()  # follow集
+        self.select = dict()  # select集
+        self.table = dict()  # 预测分析表
 
     def get_representation(self):
         """
@@ -36,14 +38,13 @@ class LL1:
 
         self.first_state = self.representation[0].split(' -> ')[0]
 
-
     def get_VT_VN(self):
         """
         根据产生式，获取终结符，非终结符
         :return:
         """
         for representation in self.representation:
-            left_representation, right_representation = representation.split(' -> ')   # 前后消空格
+            left_representation, right_representation = representation.split(' -> ')  # 前后消空格
             self.VN.add(left_representation)
 
         for representation in self.representation:
@@ -51,7 +52,6 @@ class LL1:
             for r in right_representation.split(' '):
                 if r not in self.VN | set(['|', 'ε']):
                     self.VT.add(r)
-
 
     def out_VT_VN(self):
         self.first = dict()
@@ -63,16 +63,14 @@ class LL1:
         print('非终结符：', self.VN)
         print('终结符：', self.VT)
 
-
-
-    #直接间接左递归选择入口
+    # 直接间接左递归选择入口
     def is_recursion(self):
         """
         判断是否有间接左递归/直接左递归，确定消除左递归的入口
         :param self:
         :return:
         """
-        is_indirect = False # 两个标志位，是否存在间接左递归，直接左递归
+        is_indirect = False  # 两个标志位，是否存在间接左递归，直接左递归
         is_direct = False
 
         for representation in self.representation:
@@ -91,7 +89,8 @@ class LL1:
                     if isIndirect_representation == representation:
                         continue
 
-                    isIndirect_left_representation, isIndirect_right_representation = isIndirect_representation.split(' -> ')
+                    isIndirect_left_representation, isIndirect_right_representation = isIndirect_representation.split(
+                        ' -> ')
                     # 判断是否有递归关系
                     if isIndirect_left_representation != right[0]:
                         continue
@@ -99,7 +98,7 @@ class LL1:
                     # 存在递归，继续
                     isIndirect_right_representation_list = isIndirect_right_representation.split(' | ')
                     for isIndirect_right in isIndirect_right_representation_list:
-                        isIndirect_right_list =  isIndirect_right.split(' ')
+                        isIndirect_right_list = isIndirect_right.split(' ')
                         if left_representation == isIndirect_right_list[0]:
                             is_indirect = True
 
@@ -113,10 +112,6 @@ class LL1:
         else:
             print('无左递归')
 
-
-
-
-
     def indirect2direct(self):
         """
         间接左递归变直接左递归
@@ -129,26 +124,27 @@ class LL1:
             left, right = i.split(' -> ')
             for j in right.split(' '):
                 if j in self.VN:
-                    message.append(str(j + ' at right of ' +i))
+                    message.append(str(j + ' at right of ' + i))
                     message.append(j)
         for i in self.representation:
             left, right = i.split(' -> ')
             right_list = right.split(' | ')
             if left in right:
-                if str(left + ' at right of ' +i) in message:
+                if str(left + ' at right of ' + i) in message:
                     flag = 0
                     for j in right_list:
                         j = j.split(' ')
                         if j[0] in self.VN:
                             if j[0] is not left:
                                 for k in self.representation:
-                                    kleft, kright = k.split(' -> ')#注意这里的leftright是k循环内的新变量
+                                    kleft, kright = k.split(' -> ')  # 注意这里的leftright是k循环内的新变量
                                     kright_list = kright.split(' | ')
                                     if kleft is j[0]:
                                         a = []
                                         a += [str(r) for r in kright_list]
-                                        for c in a :
-                                            a[a.index(c)] = a[a.index(c)] + right_list[right_list.index(' '.join(tmp for tmp in j))][1:]
+                                        for c in a:
+                                            a[a.index(c)] = a[a.index(c)] + right_list[right_list.index(
+                                                ' '.join(tmp for tmp in j))][1:]
                                         right_list.remove(' '.join(tmp for tmp in j))
                                         right_list.extend(a)
                                         remove_list.append(k)
@@ -158,7 +154,6 @@ class LL1:
         for i in remove_list:
             self.representation.remove(i)
         print('间接左递归变直接左递归', self.representation)
-
 
     def de_direct_recursion(self):
         """
@@ -184,9 +179,9 @@ class LL1:
                     temp = j.split(' ')
                     if temp[0] is left:
                         ldirect_flag = True
-                        remove_list_.append(j)    # 当前元素加入删除列表
-                        follow_left.extend(temp[1:])    # left的follow
-                        new_right.append(' '.join(temp[1:]) + " " + left + "'") # 新的右部
+                        remove_list_.append(j)  # 当前元素加入删除列表
+                        follow_left.extend(temp[1:])  # left的follow
+                        new_right.append(' '.join(temp[1:]) + " " + left + "'")  # 新的右部
                     elif temp[0] == 'ε':  # 第一个为空，表示为空
                         new_right.append('ε')  # 新的右部
                         epsilion_flag = True
@@ -195,7 +190,7 @@ class LL1:
                         pass
                     elif temp[0] is not left:
                         flag = True
-                        right_list[right_list.index(j)] = j + str(" " + left + "'") # 所有开头非左部表达四，都变成以他开头加左部'
+                        right_list[right_list.index(j)] = j + str(" " + left + "'")  # 所有开头非左部表达四，都变成以他开头加左部'
 
                 if epsilion_flag:
                     right_list.append(left + "'")  # 新的右部
@@ -212,8 +207,7 @@ class LL1:
 
         print('消除左递归', self.representation)
 
-
-    def get_first_VN(self,r):
+    def get_first_VN(self, r):
         """
         获取first集的递归调用
         :param r: 右子表达式，左边第一个非终结符
@@ -224,12 +218,11 @@ class LL1:
             left_representation_, right_representation_ = representation_.split(' -> ')
             if left_representation_ == r:
                 right_representation_list_ = right_representation_.split(' ')
-                if right_representation_list_[0] in self.VT|set(['ε']):
+                if right_representation_list_[0] in self.VT | set(['ε']):
                     add.add(right_representation_list_[0])
                 elif right_representation_list_[0] in self.VN:
-                    add|=(self.get_first_VN(right_representation_list_[0]))
+                    add |= (self.get_first_VN(right_representation_list_[0]))
         return add
-
 
     def get_first(self):
         """
@@ -244,15 +237,14 @@ class LL1:
 
             # 3种情况，第一个为非终结符/ε/终结符
             right_representation_list = right_representation.split(' ')
-            if right_representation_list[0] in self.VT|set(['ε']):
+            if right_representation_list[0] in self.VT | set(['ε']):
                 self.first[left_representation].add(right_representation_list[0])
             elif right_representation_list[0] in self.VN:
-                self.first[left_representation]|=self.get_first_VN(right_representation_list[0])
+                self.first[left_representation] |= self.get_first_VN(right_representation_list[0])
 
         print('FIRST')
         for i in self.first.keys():
             print(i, self.first[i])
-
 
     def get_follow(self):
         """
@@ -272,7 +264,7 @@ class LL1:
                 if i in right_representation_list:
                     next = ''
                     # 第一种情况，后面没有
-                    if len(right_representation_list) == right_representation_list.index(i)+1:    # 越界问题
+                    if len(right_representation_list) == right_representation_list.index(i) + 1:  # 越界问题
                         # self.follow[i]|=self.follow[left_representation]    # 最后一位，后面没有的情况，follow加进来
                         pass
                     else:
@@ -283,7 +275,7 @@ class LL1:
                         if next + ' -> ε' in self.representation:
                             # self.follow[i] |= self.follow[left_representation]  # 最后一位，后面没有的情况，follow加进来
                             pass
-                        self.follow[i]|=self.first[right_representation_list[right_representation_list.index(i) + 1]]
+                        self.follow[i] |= self.first[right_representation_list[right_representation_list.index(i) + 1]]
                         self.follow[i].remove('ε')
 
                     if next in self.VT:
@@ -299,8 +291,8 @@ class LL1:
                     if i in right_representation_list:
                         next = ''
                         # 第一种情况，后面没有
-                        if len(right_representation_list) == right_representation_list.index(i)+1:    # 越界问题
-                            self.follow[i]|=self.follow[left_representation]    # 最后一位，后面没有的情况，follow加进来
+                        if len(right_representation_list) == right_representation_list.index(i) + 1:  # 越界问题
+                            self.follow[i] |= self.follow[left_representation]  # 最后一位，后面没有的情况，follow加进来
                         else:
                             next = right_representation_list[right_representation_list.index(i) + 1]
 
@@ -308,17 +300,16 @@ class LL1:
                             # 第一种情况，后面指向空
                             if next + ' -> ε' in self.representation:
                                 self.follow[i] |= self.follow[left_representation]  # 最后一位，后面没有的情况，follow加进来
-                            self.follow[i]|=self.first[right_representation_list[right_representation_list.index(i) + 1]]
+                            self.follow[i] |= self.first[
+                                right_representation_list[right_representation_list.index(i) + 1]]
                             self.follow[i].remove('ε')
 
                         if next in self.VT:
                             self.follow[i].add(next)
 
-
         print('FOLLOW')
         for i in self.follow.keys():
             print(i, self.follow[i])
-
 
     def get_select(self):
         """
@@ -328,9 +319,9 @@ class LL1:
         for representation in self.representation:
             left = representation.split(' -> ')[0]
             right_1st = representation.split(' -> ')[1].split(' ')[0]
-            if right_1st in self.VN: # 非终结符
+            if right_1st in self.VN:  # 非终结符
                 self.select[representation] = self.first[left]
-            elif right_1st in self.VT: # 终结符
+            elif right_1st in self.VT:  # 终结符
                 self.select[representation] = set()
                 self.select[representation].add(right_1st)
 
@@ -341,7 +332,6 @@ class LL1:
         print('select')
         for i in self.select.keys():
             print(i, self.select[i])
-
 
     def is_ll1(self):
         """
@@ -371,7 +361,6 @@ class LL1:
         # print('VN_selcet')
         # for i in VN_selcet.keys():
         #     print(i, VN_selcet[i])
-
 
     def get_tabel(self):
         for representation in self.representation:
@@ -414,7 +403,6 @@ class LL1:
         # tmp.to_csv('./table.csv')
         print(df_table)
 
-
     def analyze(self):
         """
         对用户输入语句进行语法分析
@@ -433,7 +421,6 @@ class LL1:
                     print('输入错误，请重新输入')
                     return 0
 
-
         stack = ['$']
         # 开始符号
         stack.append(self.first_state)
@@ -448,8 +435,8 @@ class LL1:
 
         c = stack.pop()  # 访问栈
 
-        while c!='$':
-            if c in self.VN:    # 非终结符
+        while c != '$':
+            if c in self.VN:  # 非终结符
                 if input_str[i] in self.table[c].keys():  # 如果有这个表达式，查表
                     representation = self.table[c][input_str[i]]
 
@@ -460,7 +447,9 @@ class LL1:
                         for f in self.first[c]:
                             if f != 'ε':
                                 error_list.append(f)
-                        table.add_row([stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i]+'，缺少：' + str(error_list)])  # 先报错，再弹栈顶
+                        table.add_row([stack.__str__(), input_str[i:],
+                                       'error，位置：' + str(i) + '，字符：' + input_str[i] + '，缺少：' + str(
+                                           error_list)])  # 先报错，再弹栈顶
                         c = stack.pop()
                         continue
 
@@ -474,7 +463,7 @@ class LL1:
                         continue
 
                     # 正常情况反向进栈
-                    stack+=[i for i in right_representation_list[::-1]]
+                    stack += [i for i in right_representation_list[::-1]]
                     table.add_row([stack.__str__(), input_str[i:], representation])
                     c = stack.pop()
 
@@ -485,28 +474,30 @@ class LL1:
                     for f in self.first[c]:
                         if f != 'ε':
                             error_list.append(f)
-                    table.add_row([stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i] + '，缺少：' + str(error_list)])
+                    table.add_row([stack.__str__(), input_str[i:],
+                                   'error，位置：' + str(i) + '，字符：' + input_str[i] + '，缺少：' + str(error_list)])
                     i = i + 1
 
             elif c in self.VT:  # 终结符
-                if input_str[i] == c:   # 栈顶是否匹配输入
-                    table.add_row([stack.__str__(), input_str[i+1:], '匹配' + input_str[i]])
+                if input_str[i] == c:  # 栈顶是否匹配输入
+                    table.add_row([stack.__str__(), input_str[i + 1:], '匹配' + input_str[i]])
                     i = i + 1
                     c = stack.pop()
-                else:   # 不匹配，栈顶弹出
-                    table.add_row([stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i] + '，缺少：' + c])
+                else:  # 不匹配，栈顶弹出
+                    table.add_row(
+                        [stack.__str__(), input_str[i:], 'error，位置：' + str(i) + '，字符：' + input_str[i] + '，缺少：' + c])
                     c = stack.pop()
 
         if input_str[i:][0] != '$':
             stack.append(c)
 
-            while len(input_str[i:])!=0:
+            while len(input_str[i:]) != 0:
                 if input_str[i:][0] != '$':
                     table.add_row([stack.__str__(), input_str[i:], 'error:输入栈未排空 ' + str(i) + input_str[i]])
                     i += 1
                 else:
                     table.add_row([stack.__str__(), input_str[i:], '结束'])
-                    i+=1
+                    i += 1
 
         print(table)
 
@@ -514,20 +505,13 @@ class LL1:
 if __name__ == '__main__':
     pass
     ll1 = LL1()
-    ll1.get_representation()
-
-    ll1.is_recursion()
-
-    ll1.out_VT_VN()
-
-    ll1.get_first()
-    ll1.get_follow()
-    ll1.get_select()
-
-    ll1.is_ll1()
-
-    ll1.get_tabel()
-
+    ll1.get_representation()  # 获取产生式
+    ll1.is_recursion()  # 递归处理
+    ll1.out_VT_VN()  # 输出非终结符终结符集
+    ll1.get_first()  # 输出FIRST集
+    ll1.get_follow()  # 输出FOLLOW集
+    ll1.get_select()  # 输出SELECT集
+    ll1.is_ll1()  # 判断是否为LL(1)文法
+    ll1.get_tabel()  # 输出预测分析表
     for i in range(10):
-        ll1.analyze()
-
+        ll1.analyze()  # 启动分析程序
